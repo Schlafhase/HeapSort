@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="Algorithms/Algorithms.csproj" />
+  <Project Path="Datastructures/Datastructures.csproj" />
+  <Project Path="Graphical/Graphical.csproj" />
+  <Project Path="Tests/Tests.csproj" />
+</Solution>
