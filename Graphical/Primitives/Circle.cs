@@ -1,6 +1,6 @@
 namespace Graphical.Primitives
 {
-    public record CirclePrimitive(
+    public record Circle(
         float Radius,
         string? Key = null,
         Transform? Transform = null,

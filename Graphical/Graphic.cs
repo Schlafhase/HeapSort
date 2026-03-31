@@ -1,36 +1,41 @@
-﻿using Graphical.Primitives;
+﻿using System.Collections.Immutable;
+using Graphical.Primitives;
 
 namespace Graphical;
 
-public sealed class Graphic
+public sealed class Graphic(IEnumerable<Primitive>? primitives = null)
 {
-    private readonly List<Primitive> _primitives;
+    public ImmutableList<Primitive> Primitives { get; } = primitives?.ToImmutableList() ?? [];
 
-    public Graphic(IEnumerable<Primitive>? primitives = null)
+    public Graphic With(Primitive primitive) => new(Primitives.Add(primitive));
+
+    public Graphic WithRange(IEnumerable<Primitive> primitives) =>
+        new(Primitives.AddRange(primitives));
+
+    public Graphic Remove(string key)
     {
-        _primitives = primitives?.ToList() ?? [];
+        int index = Primitives.FindIndex(p => p.Key == key);
+        return index < 0 ? this : new(Primitives.RemoveAt(index));
     }
 
-    public Graphic Add(Primitive primitive) => new(_primitives.Append(primitive));
+    public Graphic Replace(string key, Primitive replacement)
+    {
+        int index = Primitives.FindIndex(p => p.Key == key);
+        return index < 0 ? this : new(Primitives.SetItem(index, replacement));
+    }
 
-    public Graphic AddRange(IEnumerable<Primitive> primitives) =>
-        new(_primitives.Concat(primitives));
-
-    public Graphic Remove(string key) => new(_primitives.Where(p => p.Key != key));
-
-    public Graphic Replace(string key, Primitive replacement) =>
-        new(_primitives.Select(p => p.Key == key ? replacement : p));
-
-    public Primitive? Find(string key) => _primitives.FirstOrDefault(p => p.Key == key);
+    public Primitive? Find(string key) => Primitives.FirstOrDefault(p => p.Key == key);
 
     public Graphic Modify(string key, Func<Primitive, Primitive> modify)
     {
-        var target =
-            Find(key)
-            ?? throw new KeyNotFoundException(
-                $"No primitive with key '{key}' exists in this Graphic."
-            );
-        return Replace(key, modify(target));
+        Primitive? target = Find(key);
+        return target is not null ? Replace(key, modify(target)) : this;
+    }
+
+    public Graphic Modify(string key, Func<Primitive, Primitive> modify, out bool success)
+    {
+        Primitive? target = Find(key);
+        success = target is not null;
+        return success ? Replace(key, modify(target!)) : this;
     }
 }
-

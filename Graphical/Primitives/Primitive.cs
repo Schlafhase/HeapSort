@@ -2,7 +2,7 @@ using System.Numerics;
 
 namespace Graphical.Primitives
 {
-    public abstract record Primitive(string? Key, Transform Transfor, Paint Paint);
+    public abstract record Primitive(string? Key, Transform Transform, Paint Paint);
 
     public record Transform(Vector2 Translation, float Rotation, Vector2 Scale)
     {

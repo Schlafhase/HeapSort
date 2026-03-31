@@ -7,4 +7,21 @@ namespace Graphical.Primitives
         Transform? Transform = null,
         Paint? Paint = null
     ) : Primitive(Key, Transform ?? Transform.Identity, Paint ?? Defaults.Paint);
+
+    public static partial class GraphicExtensions
+    {
+        extension(Graphic g)
+        {
+            public Graphic WithRectangle(
+                float width,
+                float height,
+                string? key = null,
+                Transform? transform = null,
+                Paint? paint = null
+            )
+            {
+                return g.With(new Rectangle(width, height, key, transform, paint));
+            }
+        }
+    }
 }
