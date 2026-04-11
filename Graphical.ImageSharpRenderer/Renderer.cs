@@ -1,5 +1,6 @@
 ﻿using System.Numerics;
 using Graphical.Primitives;
+using SixLabors.Fonts;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Drawing.Processing;
 using SixLabors.ImageSharp.PixelFormats;
@@ -10,94 +11,215 @@ namespace Graphical.ImageSharpRenderer;
 
 public static class Renderer
 {
-    public static Image<Rgba32> Render(Graphic g, int width, int height)
+    public static Image<Rgba32> Render(Graphic g)
     {
-        Image<Rgba32> img = new(width, height);
+        List<(Primitive primitive, Image<Rgba32> img)> rendered =
+        [
+            .. g
+                .Primitives.Select(p => (primitive: p, img: renderLocal(p)))
+                .Where(x => x.img is not null)
+                .Select(x => (x.primitive, img: x.img!)),
+        ];
 
-        foreach (Primitive p in g.Primitives)
+        if (rendered.Count == 0)
+            return new Image<Rgba32>(1, 1);
+
+        List<(float minX, float minY, float maxX, float maxY)> aabbs = rendered.ConvertAll(x =>
+            worldAabb(x.primitive, x.img)
+        );
+
+        float minX = aabbs.Min(b => b.minX);
+        float minY = aabbs.Min(b => b.minY);
+        float maxX = aabbs.Max(b => b.maxX);
+        float maxY = aabbs.Max(b => b.maxY);
+
+        int canvasW = Math.Max(1, (int)MathF.Ceiling(maxX - minX));
+        int canvasH = Math.Max(1, (int)MathF.Ceiling(maxY - minY));
+
+        Image<Rgba32> canvas = new(canvasW, canvasH);
+
+        foreach ((Primitive? primitive, Image<Rgba32>? img) in rendered)
         {
-            using Image<Rgba32>? primitiveImg = renderPrimitive(p);
-            if (primitiveImg is null)
-                continue;
-            primitiveImg.Mutate(ctx =>
-                ctx.Transform(new AffineTransformBuilder().AppendMatrix(p.Transform.ToMatrix()))
-            );
-            img.Mutate(ctx => ctx.DrawImage(primitiveImg, 1f));
+            img.Mutate(ctx =>
+            {
+                Transform t = primitive.Transform;
+                if (t.Rotation != 0f || t.Scale != Vector2.One)
+                {
+                    // NOTE: Scaling is handled in renderLocal to avoid quality loss
+                    ctx.Transform(new AffineTransformBuilder().AppendRotationRadians(t.Rotation));
+                }
+            });
+
+            Vector2 dest =
+                primitive.Transform.Translation
+                - new Vector2(img.Width / 2f, img.Height / 2f)
+                - new Vector2(minX, minY);
+
+            canvas.Mutate(ctx => ctx.DrawImage(img, new Point((int)dest.X, (int)dest.Y), 1f));
         }
 
-        return img;
+        return canvas;
     }
 
-    private static Image<Rgba32> getCanvas(
-        float left,
-        float top,
-        float right,
-        float bottom,
-        Transform t,
-        out Vector2 offset
-    )
-    {
-        int width = (int)(right - left);
-        int height = (int)(bottom - top);
-        offset = new(-left, -right);
-
-        return new(width, height);
-    }
-
-    private static Image<Rgba32>? renderPrimitive(
+    private static (float minX, float minY, float maxX, float maxY) worldAabb(
         Primitive p,
-        bool ignoreMissingImplementation = true
+        Image<Rgba32> localImg
     )
     {
-        Image<Rgba32> canvas;
+        Transform t = p.Transform;
+        float hw = localImg.Width / 2f * t.Scale.X;
+        float hh = localImg.Height / 2f * t.Scale.Y;
+
+        float cos = MathF.Abs(MathF.Cos(t.Rotation));
+        float sin = MathF.Abs(MathF.Sin(t.Rotation));
+
+        float extentX = (hw * cos) + (hh * sin);
+        float extentY = (hw * sin) + (hh * cos);
+
+        return (
+            t.Translation.X - extentX,
+            t.Translation.Y - extentY,
+            t.Translation.X + extentX,
+            t.Translation.Y + extentY
+        );
+    }
+
+    /// <summary>
+    /// renderLocal renders one primitive on one canvas that
+    /// should be just as big as the bounds of the primitives
+    /// need to be. It also applies the scale of the primitives
+    /// to avoid a loss of quality.
+    /// </summary>
+    private static Image<Rgba32>? renderLocal(Primitive p)
+    {
+        Vector2 scale = p.Transform.Scale;
         switch (p)
         {
             case Composite c:
-                IEnumerable<(Primitive p, Image<Rgba32> img)> rendered = c.GetPrimitives()
-                    .Select(p => (p, renderPrimitive(p)))
-                    .OfType<(Primitive, Image<Rgba32>)>();
+                List<(Primitive child, Image<Rgba32> img)> children =
+                [
+                    .. c.GetPrimitives()
+                        // PERF: could probably be optimised by merging both select calls but this is more readable
+                        .Select(child =>
+                            child with
+                            {
+                                Transform = child.Transform with
+                                {
+                                    Translation = child.Transform.Translation * scale,
+                                    Scale = child.Transform.Scale * scale,
+                                },
+                            }
+                        )
+                        .Select(child => (child, img: renderLocal(child)!))
+                        .Where(c => c.img is not null),
+                ];
 
-                canvas = new(rendered.Max(r => r.p.), rendered.Max(r => r.Bounds.Height));
-                float left = rendered.Min(r => r.Bounds.)
-                canvas.Mutate(ctx =>
+                if (children.Count == 0)
+                    return null;
+
+                List<(float minX, float minY, float maxX, float maxY)> childAabbs =
+                    children.ConvertAll(x => worldAabb(x.child, x.img));
+
+                float cMinX = childAabbs.Min(b => b.minX);
+                float cMinY = childAabbs.Min(b => b.minY);
+                float cMaxX = childAabbs.Max(b => b.maxX);
+                float cMaxY = childAabbs.Max(b => b.maxY);
+
+                int cW = Math.Max(1, (int)MathF.Ceiling(cMaxX - cMinX));
+                int cH = Math.Max(1, (int)MathF.Ceiling(cMaxY - cMinY));
+
+                Image<Rgba32> compositeImg = new(cW, cH);
+                compositeImg.Mutate(ctx =>
                 {
-                    foreach (Image<Rgba32> render in rendered)
+                    foreach ((Primitive? child, Image<Rgba32>? img) in children)
                     {
-                        ctx.DrawImage(render, new Point(0, 0), 1f);
+                        Vector2 dest =
+                            child.Transform.Translation
+                            - new Vector2(img.Width / 2f, img.Height / 2f)
+                            - new Vector2(cMinX, cMinY);
+                        ctx.DrawImage(img, new Point((int)dest.X, (int)dest.Y), 1f);
                     }
                 });
-                return canvas;
+                return compositeImg;
 
             case Rectangle r:
-                if ((int)r.Width == 0 || (int)r.Height == 0)
-                {
+                int w = Math.Max(1, (int)(r.Width * scale.X));
+                int h = Math.Max(1, (int)(r.Height * scale.Y));
+                if (w == 0 || h == 0)
                     return null;
-                }
-                return new Image<Rgba32>((int)r.Width, (int)r.Height, r.Paint.Fill.ToRgba32());
+
+                return new Image<Rgba32>(w, h, r.Paint.Fill.ToRgba32());
 
             case Triangle t:
-                canvas = new(
-                    (int)((IEnumerable<Vector2>)[t.A, t.B, t.C]).Max(v => v.X),
-                    (int)((IEnumerable<Vector2>)[t.A, t.B, t.C]).Max(v => v.Y)
-                );
-                canvas.Mutate(ctx =>
+                Triangle scaled = t with { A = t.A * scale, B = t.B * scale, C = t.C * scale };
+
+                float tMinX = new[] { scaled.A.X, scaled.B.X, scaled.C.X }.Min();
+                float tMinY = new[] { scaled.A.Y, scaled.B.Y, scaled.C.Y }.Min();
+                float tMaxX = new[] { scaled.A.X, scaled.B.X, scaled.C.X }.Max();
+                float tMaxY = new[] { scaled.A.Y, scaled.B.Y, scaled.C.Y }.Max();
+
+                int triW = Math.Max(1, (int)MathF.Ceiling(tMaxX - tMinX));
+                int triH = Math.Max(1, (int)MathF.Ceiling(tMaxY - tMinY));
+
+                if (triW == 0 || triH == 0)
+                    return null;
+
+                Vector2 offset = new(-tMinX, -tMinY);
+                Image<Rgba32> tri = new(triW, triH);
+                tri.Mutate(ctx =>
                     ctx.FillPolygon(
-                        t.Paint.Fill.ToColor(),
-                        t.A.ToPointF(),
-                        t.B.ToPointF(),
-                        t.C.ToPointF()
+                        scaled.Paint.Fill.ToColor(),
+                        (scaled.A + offset).ToPointF(),
+                        (scaled.B + offset).ToPointF(),
+                        (scaled.C + offset).ToPointF()
                     )
                 );
-                return canvas;
+                return tri;
 
             case Text t:
-                throw new NotImplementedException();
+                return renderText(t);
+
             default:
-                return ignoreMissingImplementation
-                    ? new Image<Rgba32>(1, 1)
-                    : throw new NotImplementedException(
-                        $"No rendering method implemented for {p.GetType().Name}"
-                    );
+                return new Image<Rgba32>(1, 1);
         }
+    }
+
+    private static readonly string[] _fontFallbacks =
+    [
+        "Arial",
+        "Liberation Sans",
+        "DejaVu Sans",
+        "FreeSans",
+    ];
+
+    private static Font resolveFont(string fontFamily, float size)
+    {
+        foreach (string family in (IEnumerable<string>)[fontFamily, .. _fontFallbacks])
+        {
+            if (SystemFonts.TryGet(family, out FontFamily ff))
+                return ff.CreateFont(size);
+        }
+        FontFamily any = SystemFonts.Families.FirstOrDefault();
+        return any.CreateFont(size);
+    }
+
+    private static Image<Rgba32>? renderText(Text t)
+    {
+        Vector2 scale = t.Transform.Scale;
+        float scaledSize = t.FontSize * MathF.Max(scale.X, scale.Y);
+        Font font = resolveFont(t.FontFamily, scaledSize);
+
+        TextOptions opts = new(font);
+        FontRectangle measured = TextMeasurer.MeasureAdvance(t.Content, opts);
+
+        int w = Math.Max(1, (int)MathF.Ceiling(measured.Width));
+        int h = Math.Max(1, (int)MathF.Ceiling(measured.Height));
+
+        if (w == 0 || h == 0)
+            return null;
+
+        Image<Rgba32> img = new(w, h);
+        img.Mutate(ctx => ctx.DrawText(t.Content, font, t.Paint.Fill.ToColor(), new PointF(0, 0)));
+        return img;
     }
 }

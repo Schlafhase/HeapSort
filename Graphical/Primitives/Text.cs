@@ -3,6 +3,7 @@ namespace Graphical.Primitives
     public record Text(
         string Content,
         float FontSize = 16f,
+        string FontFamily = "JetBrains Mono",
         string? Key = null,
         Transform? Transform = null,
         Paint? Paint = null
@@ -15,12 +16,13 @@ namespace Graphical.Primitives
             public Graphic WithText(
                 string content,
                 float fontSize = 16f,
+                string fontFamily = "JetBrains Mono",
                 string? key = null,
                 Transform? transform = null,
                 Paint? paint = null
             )
             {
-                return g.With(new Text(content, fontSize, key, transform, paint));
+                return g.With(new Text(content, fontSize, fontFamily, key, transform, paint));
             }
         }
     }
