@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Graphical\Graphical.csproj" />
     <ProjectReference Include="..\Graphical.ImageSharpRenderer\Graphical.ImageSharpRenderer.csproj" />
+    <ProjectReference Include="..\Datastructures\Datastructures.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
