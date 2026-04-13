@@ -12,6 +12,8 @@ public sealed class Graphic(IEnumerable<Primitive>? primitives = null)
     public Graphic WithRange(IEnumerable<Primitive> primitives) =>
         new(Primitives.AddRange(primitives));
 
+    public AnimatedGraphic Animate() => new(this);
+
     public Graphic Remove(string key)
     {
         int index = Primitives.FindIndex(p => p.Key == key);

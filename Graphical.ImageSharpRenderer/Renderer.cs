@@ -9,6 +9,7 @@ using Rectangle = Graphical.Primitives.Rectangle;
 
 namespace Graphical.ImageSharpRenderer;
 
+// BUG: bounds calculation for the canvas is completely off (width doesn't seem to change at all and height is not enough for rotated rect at least)
 public static class Renderer
 {
     public static Image<Rgba32> Render(Graphic g)
