@@ -56,4 +56,3 @@ public sealed class AnimatedGraphic(Graphic baseGraphic, IEnumerable<Animation>?
         return currentFrame;
     }
 }
-

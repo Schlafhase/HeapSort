@@ -1,4 +1,5 @@
-﻿using System.Numerics;
+﻿using System.Diagnostics;
+using System.Numerics;
 using Graphical.Primitives;
 using SixLabors.Fonts;
 using SixLabors.ImageSharp;
@@ -197,11 +198,77 @@ public static class Renderer
     {
         foreach (string family in (IEnumerable<string>)[fontFamily, .. _fontFallbacks])
         {
-            if (SystemFonts.TryGet(family, out FontFamily ff))
+            if (tryGetFF(family, out FontFamily ff))
+            {
                 return ff.CreateFont(size);
+            }
         }
-        FontFamily any = SystemFonts.Families.FirstOrDefault();
+        FontFamily any = SystemFonts.Families.First();
         return any.CreateFont(size);
+    }
+
+    private static readonly Dictionary<string, FontFamily> _fontCache = [];
+    private static readonly FontCollection _fontCollection = new();
+    private static bool _systemFontsAdded;
+
+    private static bool tryGetFF(string family, out FontFamily ff)
+    {
+        if (!_systemFontsAdded)
+        {
+            _fontCollection.AddSystemFonts();
+            _systemFontsAdded = true;
+        }
+
+        if (_fontCache.TryGetValue(family, out FontFamily _ff))
+        {
+            ff = _ff;
+            return true;
+        }
+
+        if (_fontCollection.TryGet(family, out _ff))
+        {
+            ff = _ff;
+            _fontCache[family] = ff;
+            return true;
+        }
+
+        ProcessStartInfo psi = new()
+        {
+            FileName = "fc-list",
+            RedirectStandardOutput = true,
+            UseShellExecute = false,
+        };
+        using (Process? p = Process.Start(psi))
+        {
+            if (p is null)
+            {
+                goto fail;
+            }
+            string output = p.StandardOutput.ReadToEnd();
+            p.WaitForExit();
+
+            foreach (string line in output.Split('\n'))
+            {
+                string[] parts = line.Split(':');
+
+                try
+                {
+                    string[] names = [.. parts[1].Split(',').Select(n => n.Trim())];
+
+                    if (names.Contains(family))
+                    {
+                        ff = _fontCollection.Add(parts[0]);
+                        _fontCache[family] = ff;
+                        return true;
+                    }
+                }
+                catch { } // IndexOutOfRangeException means bad format in fc-list output; don't care
+            }
+        }
+
+        fail:
+        ff = default;
+        return false;
     }
 
     private static Image<Rgba32>? renderText(Text t)
