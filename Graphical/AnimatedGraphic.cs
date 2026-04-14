@@ -34,6 +34,7 @@ public sealed class AnimatedGraphic(Graphic baseGraphic, IEnumerable<Animation>?
     /// <returns>The frame before advancing or null if it's the final frame</returns>
     public Graphic? Advance(double dt)
     {
+        // FIX: Ensure that animations with shorter duration than dt still get executed (with t = 1)
         Animation current = Animations[_animationIndex];
         double t = (_time - _currentAnimationStart) / current.Duration;
         t = t < 1 ? t : 1;
