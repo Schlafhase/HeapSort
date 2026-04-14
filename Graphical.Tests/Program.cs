@@ -1,40 +1,12 @@
-﻿using System.Numerics;
+﻿using Datastructures;
 using Graphical;
-using Graphical.Animations;
 using Graphical.ImageSharpRenderer;
-using Graphical.Primitives;
 using SixLabors.ImageSharp;
-using Color = Graphical.Primitives.Color;
 
-Graphic g = new Graphic()
-    .WithRectangle(1920, 1080, key: "rect")
-    .WithText(
-        "Hello Wordl",
-        transform: Transform.Identity with
-        {
-            Scale = new(5),
-        },
-        paint: new Paint(Color.Black, Color.Black)
-    );
+VisualisedArray<int> varray = new([1, 2, 3, 4, 5]);
 
-AnimatedGraphic animated = g.Animate()
-    .With(
-        new TransformAnimation(
-            "rect",
-            2,
-            new Transform(Translation: new Vector2(0), Rotation: 2, Scale: new Vector2(0.2f))
-        )
-    )
-    .With(new TransformAnimation("rect", 1, Transform.Identity with { Scale = new Vector2(0.5f) }))
-    .With(
-        new TransformAnimation(
-            "rect",
-            1.5,
-            Transform.Identity with
-            {
-                Translation = new Vector2(2000, 0),
-            }
-        )
-    );
+varray.StartRecording();
+varray.Swap(1, 3);
+varray.Swap(1, 4);
 
-animated.RenderToFile("out.mp4", (g, path) => Renderer.Render(g).Save(path));
+varray.GetRecording().RenderToFile("out.mp4", (g, p) => Renderer.Render(g).Save(p));
