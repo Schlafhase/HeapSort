@@ -7,9 +7,9 @@ public sealed class AnimatedGraphic(Graphic baseGraphic, IEnumerable<Animation>?
 {
     private readonly Graphic _baseGraphic = baseGraphic;
     private Graphic _currentBaseFrame = baseGraphic;
-    private int _animationIndex = 0;
-    private double _currentAnimationStart = 0;
-    private double _time = 0;
+    private int _animationIndex;
+    private double _currentAnimationStart;
+    private double _time;
 
     public ImmutableList<Animation> Animations { get; } = animations?.ToImmutableList() ?? [];
 
@@ -34,13 +34,16 @@ public sealed class AnimatedGraphic(Graphic baseGraphic, IEnumerable<Animation>?
     /// <returns>The frame before advancing or null if it's the final frame</returns>
     public Graphic? Advance(double dt)
     {
-        // FIX: Ensure that animations with shorter duration than dt still get executed (with t = 1)
+        if (_animationIndex >= Animations.Count)
+        {
+            Reset();
+            return null;
+        }
         Animation current = Animations[_animationIndex];
         double t = (_time - _currentAnimationStart) / current.Duration;
         t = t < 1 ? t : 1;
 
         Graphic currentFrame = current.Apply(_currentBaseFrame, t);
-        _time += dt;
 
         if (t >= 1)
         {
@@ -52,7 +55,30 @@ public sealed class AnimatedGraphic(Graphic baseGraphic, IEnumerable<Animation>?
                 Reset();
                 return null;
             }
+            current = Animations[_animationIndex];
         }
+
+        while (t >= 1)
+        {
+            t = (_time - _currentAnimationStart) / current.Duration;
+            t = t < 1 ? t : 1;
+            currentFrame = current.Apply(_currentBaseFrame, t);
+
+            if (t >= 1)
+            {
+                _currentBaseFrame = currentFrame;
+                _currentAnimationStart += current.Duration;
+                _animationIndex++;
+                if (_animationIndex >= Animations.Count)
+                {
+                    Reset();
+                    return null;
+                }
+                current = Animations[_animationIndex];
+            }
+        }
+
+        _time += dt;
 
         return currentFrame;
     }

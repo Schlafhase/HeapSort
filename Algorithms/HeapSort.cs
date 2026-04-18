@@ -1,22 +1,26 @@
-﻿namespace Algorithms;
+﻿using Datastructures;
+using Graphical;
+
+namespace Algorithms;
 
 public static class HeapSort
 {
-    public static List<T> Sort<T>(List<T> values)
+    public static (List<T>, AnimatedGraphic) Sort<T>(List<T> values)
         where T : IComparable
     {
-        T[] heap = [.. values];
+        VisualisedArray<T> heap = new([.. values]);
+        heap.StartRecording();
         heapify(heap);
         for (int end = heap.Length - 1; end > 0; end--)
         {
-            (heap[0], heap[end]) = (heap[end], heap[0]);
+            heap.Swap(0, end);
             siftDown(heap, 0, end);
         }
 
-        return [.. heap];
+        return ([.. heap], heap.GetRecording());
     }
 
-    private static void heapify<T>(T[] heap)
+    private static void heapify<T>(VisualisedArray<T> heap)
         where T : IComparable
     {
         for (int i = parent(heap.Length - 1); i >= 0; i--)
@@ -25,7 +29,7 @@ public static class HeapSort
         }
     }
 
-    private static void siftDown<T>(T[] heap, int index, int end)
+    private static void siftDown<T>(VisualisedArray<T> heap, int index, int end)
         where T : IComparable
     {
         int maxIndex = ((IEnumerable<int>)[index, lChild(index), rChild(index)])
@@ -35,7 +39,7 @@ public static class HeapSort
         if (maxIndex == index)
             return;
 
-        (heap[index], heap[maxIndex]) = (heap[maxIndex], heap[index]);
+        heap.Swap(index, maxIndex);
         siftDown(heap, maxIndex, end);
     }
 

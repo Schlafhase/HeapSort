@@ -10,23 +10,39 @@ using Rectangle = Graphical.Primitives.Rectangle;
 
 namespace Graphical.ImageSharpRenderer;
 
-// BUG: bounds calculation for the canvas is completely off (width doesn't seem to change at all and height is not enough for rotated rect at least)
-// suggestion: add bounds directly to primtive record
-// (will be a bit inconvenient with things like Text)
 public static class Renderer
 {
-    public static Image<Rgba32> Render(Graphic g)
+    public static Image<Rgba32> Render(
+        Graphic g,
+        float scale = 1,
+        Vector2? forcedDimensions = null,
+        ResizeMode resizeMode = ResizeMode.Max
+    )
     {
         List<(Primitive primitive, Image<Rgba32> img)> rendered =
         [
             .. g
-                .Primitives.Select(p => (primitive: p, img: renderLocal(p)))
+                .Primitives.Select(p =>
+                    (
+                        primitive: p,
+                        img: renderLocal(
+                            p with
+                            {
+                                Transform = p.Transform with { Scale = p.Transform.Scale * scale },
+                            }
+                        )
+                    )
+                )
                 .Where(x => x.img is not null)
                 .Select(x => (x.primitive, img: x.img!)),
         ];
 
         if (rendered.Count == 0)
-            return new Image<Rgba32>(1, 1);
+        {
+            return forcedDimensions is Vector2 dim
+                ? new Image<Rgba32>((int)dim.X, (int)dim.Y)
+                : new Image<Rgba32>(1, 1);
+        }
 
         List<(float minX, float minY, float maxX, float maxY)> aabbs = rendered.ConvertAll(x =>
             worldAabb(x.primitive, x.img)
@@ -62,6 +78,30 @@ public static class Renderer
             canvas.Mutate(ctx => ctx.DrawImage(img, new Point((int)dest.X, (int)dest.Y), 1f));
         }
 
+        if (forcedDimensions is Vector2 forcedDim)
+        {
+            canvas.Mutate(c =>
+                c.Resize(
+                    new ResizeOptions()
+                    {
+                        Size = new((int)forcedDim.X, (int)forcedDim.Y),
+                        Mode = resizeMode,
+                    }
+                )
+            );
+            // // Final resize needed to ensure that the actual image dimensions match the specified dimensions
+            // canvas.Mutate(c =>
+            //     c.Resize(
+            //         new ResizeOptions()
+            //         {
+            //             Size = new((int)forcedDim.X, (int)forcedDim.Y),
+            //             S
+            //             TargetRectangle = new(0, 0, (int)forcedDim.X, (int)forcedDim.Y),
+            //             Mode = ResizeMode.Manual,
+            //         }
+            //     )
+            // );
+        }
         return canvas;
     }
 
@@ -71,20 +111,28 @@ public static class Renderer
     )
     {
         Transform t = p.Transform;
+
         float hw = localImg.Width / 2f * t.Scale.X;
         float hh = localImg.Height / 2f * t.Scale.Y;
+
+        Vector2[] vertices = [new(-hw, hh), new(hw, hh), new(-hw, hh), new(-hw, -hh)];
 
         float cos = MathF.Abs(MathF.Cos(t.Rotation));
         float sin = MathF.Abs(MathF.Sin(t.Rotation));
 
-        float extentX = (hw * cos) + (hh * sin);
-        float extentY = (hw * sin) + (hh * cos);
+        Vector2[] rotated =
+        [
+            .. vertices.Select(v => new Vector2(
+                (v.X * cos) - (v.Y * sin),
+                (v.X * sin) + (v.Y * cos)
+            )),
+        ];
 
         return (
-            t.Translation.X - extentX,
-            t.Translation.Y - extentY,
-            t.Translation.X + extentX,
-            t.Translation.Y + extentY
+            t.Translation.X + rotated.Min(v => v.X),
+            t.Translation.Y + rotated.Min(v => v.Y),
+            t.Translation.X + rotated.Max(v => v.X),
+            t.Translation.Y + rotated.Max(v => v.Y)
         );
     }
 

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Numerics;
 
 namespace Graphical;
 
@@ -35,7 +36,7 @@ public static class AnimationRenderer
             {
                 FileName = "ffmpeg",
                 Arguments =
-                    $"-framerate {fps} -y -i {dirName}/frame_%09d.jpg -c:v libx264 -crf 1 -vf scale=1920:1080 -pix_fmt yuv420p {filepath}",
+                    $@"-framerate {fps} -y -i {dirName}/frame_%09d.jpg -c:v libx264 -crf 1 -vf ""scale=iw*min(1920/iw\,1080/ih):ih*min(1920/iw\,1080/ih), pad=1920:1080:(1920-iw*min(1920/iw\,1080/ih))/2:(1080-ih*min(1920/iw\,1080/ih))/2"" -pix_fmt yuv420p {filepath}",
                 RedirectStandardError = true,
                 UseShellExecute = false,
             };

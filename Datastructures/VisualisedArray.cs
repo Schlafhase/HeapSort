@@ -1,6 +1,8 @@
+using System.Collections;
 using Graphical;
 using Graphical.Animations;
 using Graphical.Primitives;
+using Graphical.Util;
 
 namespace Datastructures;
 
@@ -9,9 +11,18 @@ public class VisualisedArray<T>(
     float width = 800,
     float height = 600,
     Color? barColor = null,
-    float spacing = 2
-)
+    float spacing = 2,
+    double animationTime = 0.5
+) : IEnumerable<T>
 {
+    public T this[int index]
+    {
+        get => data[index];
+        set => data[index] = value;
+    }
+
+    public int Length = data.Length;
+
     private static readonly bool _isNumeric =
         typeof(T) == typeof(int)
         || typeof(T) == typeof(float)
@@ -40,6 +51,8 @@ public class VisualisedArray<T>(
 
     public void Swap(int a, int b)
     {
+        (data[a], data[b]) = (data[b], data[a]);
+
         Graphic render = Render();
         Primitive? pa = render.Find($"array_{a}");
         Primitive? pb = render.Find($"array_{b}");
@@ -52,33 +65,48 @@ public class VisualisedArray<T>(
             );
         }
 
+        if (_animatedChanges is null)
+        {
+            return;
+        }
+
         _animatedChanges = _animatedChanges
             .With(
                 new ParallelAnimation([
                     new TransformAnimation(
                         $"array_{a}",
-                        1,
+                        animationTime,
                         pa.Transform with
                         {
                             Translation = pb.Transform.Translation,
-                        }
+                        },
+                        Interpolation: InterpolationTypes.Cubic
                     ),
                     new TransformAnimation(
                         $"array_{b}",
-                        1,
+                        animationTime,
                         pb.Transform with
                         {
                             Translation = pa.Transform.Translation,
-                        }
+                        },
+                        Interpolation: InterpolationTypes.Cubic
                     ),
                 ])
             )
             .With(
-                new ChangeKeys(new Dictionary<string, string> { { $"array_{a}", $"array_{b}" } })
+                new ChangeKeys(
+                    new Dictionary<string, string>
+                    {
+                        { $"array_{a}", $"array_{b}" },
+                        { $"array_{b}", $"array_{a}" },
+                    }
+                )
             );
     }
 
-    public AnimatedGraphic GetRecording() => _animatedChanges;
+    public AnimatedGraphic GetRecording() =>
+        _animatedChanges
+        ?? throw new InvalidOperationException("A recording must be started first");
 
     private Graphic renderNumeric()
     {
@@ -156,5 +184,15 @@ public class VisualisedArray<T>(
         if (value is IConvertible convertible)
             return convertible.ToDouble(null);
         return 0;
+    }
+
+    public IEnumerator<T> GetEnumerator()
+    {
+        return ((IEnumerable<T>)data).GetEnumerator();
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return GetEnumerator();
     }
 }

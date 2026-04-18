@@ -3,6 +3,7 @@
     <ProjectReference Include="..\Graphical\Graphical.csproj" />
     <ProjectReference Include="..\Graphical.ImageSharpRenderer\Graphical.ImageSharpRenderer.csproj" />
     <ProjectReference Include="..\Datastructures\Datastructures.csproj" />
+    <ProjectReference Include="..\Algorithms\Algorithms.csproj" />
   </ItemGroup>
   <PropertyGroup>
     <OutputType>Exe</OutputType>
