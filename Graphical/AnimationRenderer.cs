@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Numerics;
 
 namespace Graphical;
 
@@ -9,7 +8,9 @@ public static class AnimationRenderer
         this AnimatedGraphic g,
         string filepath,
         Action<Graphic, string> renderAndSave,
-        int fps = 30
+        int fps = 30,
+        int width = 1920,
+        int height = 1080
     )
     {
         string dirName = Guid.NewGuid().ToString();
@@ -36,7 +37,7 @@ public static class AnimationRenderer
             {
                 FileName = "ffmpeg",
                 Arguments =
-                    $@"-framerate {fps} -y -i {dirName}/frame_%09d.jpg -c:v libx264 -crf 1 -vf ""scale=iw*min(1920/iw\,1080/ih):ih*min(1920/iw\,1080/ih), pad=1920:1080:(1920-iw*min(1920/iw\,1080/ih))/2:(1080-ih*min(1920/iw\,1080/ih))/2"" -pix_fmt yuv420p {filepath}",
+                    $@"-framerate {fps} -y -i {dirName}/frame_%09d.jpg -c:v libx264 -crf 1 -vf ""scale=iw*min({width}/iw\,{height}/ih):ih*min({width}/iw\,{height}/ih), pad={width}:{height}:({width}-iw*min({width}/iw\,{height}/ih))/2:({height}-ih*min({width}/iw\,{height}/ih))/2"" -pix_fmt yuv420p {filepath}",
                 RedirectStandardError = true,
                 UseShellExecute = false,
             };

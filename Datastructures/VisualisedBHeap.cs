@@ -6,63 +6,90 @@ using Graphical.Util;
 
 namespace Datastructures;
 
-public class VisualisedBHeap<T>(
-    T[] data,
+public struct BHeapAnimationData
+{
+    public AnimatedGraphic Heap;
+    public AnimatedGraphic FullArray;
+}
+
+public class VisualisedBHeap(
+    int[] data,
     float width = 800,
     float height = 600,
     double animationTime = 0.5
-) : IEnumerable<T>
+) : IEnumerable<int>
 {
-    public T this[int index]
+    public int this[int index]
     {
         get => data[index];
         set => data[index] = value;
     }
 
+    public int[] Data => data;
+
     public int Length = data.Length;
+    public int End { get; set; } = data.Length;
 
     private AnimatedGraphic? _animatedChanges;
+    private VisualisedArray? _fullArray;
 
     public void StartRecording()
     {
+        _fullArray = new([.. data]); // Don't want to copy by reference to avoid side effects
+        _fullArray.StartRecording();
         _animatedChanges = Render().Animate();
     }
 
     public void Swap(int a, int b)
     {
-        (data[a], data[b]) = (data[b], data[a]);
-
-        Graphic render = Render();
-        Primitive? pa = render.Find($"array_{a}");
-        Primitive? pb = render.Find($"array_{b}");
-
-        if (pa is null || pb is null)
+        if (a >= data.Length || b >= data.Length)
         {
             throw new ArgumentOutOfRangeException(
                 nameof(a),
                 "One of the indices was out of range."
             );
         }
+        (data[a], data[b]) = (data[b], data[a]);
 
         if (_animatedChanges is null)
         {
             return;
+        }
+        _fullArray!.Swap(a, b);
+
+        Graphic render = Render();
+        string aKey = $"bheap_{a}";
+        string bKey = $"bheap_{b}";
+        bool swapToEnd = false;
+        Primitive? pa = render.Find(aKey);
+        Primitive? pb = render.Find(bKey);
+
+        if (pa is null || pb is null)
+        {
+            throw new InvalidOperationException("Something went very wrong");
+        }
+
+        if (b >= End)
+        {
+            swapToEnd = true;
         }
 
         _animatedChanges = _animatedChanges
             .With(
                 new ParallelAnimation([
                     new TransformAnimation(
-                        $"array_{a}",
+                        aKey,
                         animationTime,
                         pa.Transform with
                         {
-                            Translation = pb.Transform.Translation,
+                            Translation = swapToEnd
+                                ? new(width - 20 - ((data.Length - End) * 80), -80)
+                                : pb.Transform.Translation,
                         },
                         Interpolation: InterpolationTypes.Cubic
                     ),
                     new TransformAnimation(
-                        $"array_{b}",
+                        bKey,
                         animationTime,
                         pb.Transform with
                         {
@@ -76,16 +103,21 @@ public class VisualisedBHeap<T>(
                 new ChangeKeys(
                     new Dictionary<string, string>
                     {
-                        { $"array_{a}", $"array_{b}" },
-                        { $"array_{b}", $"array_{a}" },
+                        { $"bheap_{a}", $"bheap_{b}" },
+                        { $"bheap_{b}", $"bheap_{a}" },
                     }
                 )
             );
     }
 
-    public AnimatedGraphic GetRecording() =>
-        _animatedChanges
-        ?? throw new InvalidOperationException("A recording must be started first");
+    public BHeapAnimationData GetRecording() =>
+        new()
+        {
+            Heap =
+                _animatedChanges
+                ?? throw new InvalidOperationException("A recording must be started first"),
+            FullArray = _fullArray!.GetRecording(),
+        };
 
     public int Height(int index)
     {
@@ -98,22 +130,35 @@ public class VisualisedBHeap<T>(
 
     public Graphic Render()
     {
-        return renderSubtree(0, 0, 0, Height(0));
+        int tHeight = Height(0);
+        return renderSubtree(0, 0, 0, 0, tHeight, height / tHeight);
     }
 
-    private Graphic renderSubtree(int index, float x, int depth, int tHeight)
+    private Graphic renderSubtree(
+        int index,
+        float x,
+        float y,
+        int depth,
+        int tHeight,
+        float yOffset
+    )
     {
         if (index >= data.Length)
         {
             return new Graphic();
         }
 
-        float y = depth / tHeight * height;
-
         return new Graphic()
             .With(
-                new Circle(
-                    5,
+                new Graphic(
+                    [
+                        new Circle(50),
+                        new Text(
+                            data[index].ToString(),
+                            FontSize: 30,
+                            Paint: new Paint(Color.Black, Color.Black)
+                        ),
+                    ],
                     Key: $"bheap_{index}",
                     Transform: Transform.Identity with
                     {
@@ -125,16 +170,20 @@ public class VisualisedBHeap<T>(
                 renderSubtree(
                     lChild(index),
                     x - (width / 4 / (depth + 1)),
+                    y + yOffset,
                     depth + 1,
-                    tHeight
+                    tHeight,
+                    yOffset
                 ).Primitives
             )
             .WithRange(
                 renderSubtree(
                     rChild(index),
                     x + (width / 4 / (depth + 1)),
+                    y + yOffset,
                     depth + 1,
-                    tHeight
+                    tHeight,
+                    yOffset
                 ).Primitives
             );
     }
@@ -145,9 +194,9 @@ public class VisualisedBHeap<T>(
 
     private static int rChild(int index) => (2 * index) + 2;
 
-    public IEnumerator<T> GetEnumerator()
+    public IEnumerator<int> GetEnumerator()
     {
-        return ((IEnumerable<T>)data).GetEnumerator();
+        return ((IEnumerable<int>)data).GetEnumerator();
     }
 
     IEnumerator IEnumerable.GetEnumerator()

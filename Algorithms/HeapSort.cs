@@ -1,18 +1,17 @@
 ﻿using Datastructures;
-using Graphical;
 
 namespace Algorithms;
 
 public static class HeapSort
 {
-    public static (List<T>, AnimatedGraphic) Sort<T>(List<T> values)
-        where T : IComparable
+    public static (List<int>, BHeapAnimationData) Sort(List<int> values)
     {
-        VisualisedArray<T> heap = new([.. values]);
+        VisualisedBHeap heap = new([.. values]);
         heap.StartRecording();
         heapify(heap);
         for (int end = heap.Length - 1; end > 0; end--)
         {
+            heap.End = end;
             heap.Swap(0, end);
             siftDown(heap, 0, end);
         }
@@ -20,8 +19,7 @@ public static class HeapSort
         return ([.. heap], heap.GetRecording());
     }
 
-    private static void heapify<T>(VisualisedArray<T> heap)
-        where T : IComparable
+    private static void heapify(VisualisedBHeap heap)
     {
         for (int i = parent(heap.Length - 1); i >= 0; i--)
         {
@@ -29,8 +27,7 @@ public static class HeapSort
         }
     }
 
-    private static void siftDown<T>(VisualisedArray<T> heap, int index, int end)
-        where T : IComparable
+    private static void siftDown(VisualisedBHeap heap, int index, int end)
     {
         int maxIndex = ((IEnumerable<int>)[index, lChild(index), rChild(index)])
             .Where(i => i < end)

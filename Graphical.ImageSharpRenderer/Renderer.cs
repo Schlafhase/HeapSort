@@ -12,12 +12,7 @@ namespace Graphical.ImageSharpRenderer;
 
 public static class Renderer
 {
-    public static Image<Rgba32> Render(
-        Graphic g,
-        float scale = 1,
-        Vector2? forcedDimensions = null,
-        ResizeMode resizeMode = ResizeMode.Max
-    )
+    public static Image<Rgba32> Render(Graphic g, float scale = 1)
     {
         List<(Primitive primitive, Image<Rgba32> img)> rendered =
         [
@@ -39,9 +34,7 @@ public static class Renderer
 
         if (rendered.Count == 0)
         {
-            return forcedDimensions is Vector2 dim
-                ? new Image<Rgba32>((int)dim.X, (int)dim.Y)
-                : new Image<Rgba32>(1, 1);
+            return new Image<Rgba32>(1, 1);
         }
 
         List<(float minX, float minY, float maxX, float maxY)> aabbs = rendered.ConvertAll(x =>
@@ -78,30 +71,6 @@ public static class Renderer
             canvas.Mutate(ctx => ctx.DrawImage(img, new Point((int)dest.X, (int)dest.Y), 1f));
         }
 
-        if (forcedDimensions is Vector2 forcedDim)
-        {
-            canvas.Mutate(c =>
-                c.Resize(
-                    new ResizeOptions()
-                    {
-                        Size = new((int)forcedDim.X, (int)forcedDim.Y),
-                        Mode = resizeMode,
-                    }
-                )
-            );
-            // // Final resize needed to ensure that the actual image dimensions match the specified dimensions
-            // canvas.Mutate(c =>
-            //     c.Resize(
-            //         new ResizeOptions()
-            //         {
-            //             Size = new((int)forcedDim.X, (int)forcedDim.Y),
-            //             S
-            //             TargetRectangle = new(0, 0, (int)forcedDim.X, (int)forcedDim.Y),
-            //             Mode = ResizeMode.Manual,
-            //         }
-            //     )
-            // );
-        }
         return canvas;
     }
 
@@ -230,6 +199,14 @@ public static class Renderer
 
             case Text t:
                 return renderText(t);
+
+            case Circle c:
+                w = Math.Max(1, (int)(c.Radius * scale.X));
+                h = Math.Max(1, (int)(c.Radius * scale.Y));
+                if (w == 0 || h == 0)
+                    return null;
+
+                return new Image<Rgba32>(w, h, c.Paint.Fill.ToRgba32());
 
             default:
                 return new Image<Rgba32>(1, 1);

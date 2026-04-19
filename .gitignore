@@ -6,9 +6,10 @@
 # dotenv files
 .env
 
-.mp4
-.png
-.jpg
+# Generated media
+*.mp4
+*.png
+*.jpg
 
 # User-specific files
 *.rsuser

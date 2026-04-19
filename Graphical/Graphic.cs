@@ -3,9 +3,15 @@ using Graphical.Primitives;
 
 namespace Graphical;
 
-public sealed class Graphic(IEnumerable<Primitive>? primitives = null)
+public record class Graphic(
+    IEnumerable<Primitive>? InitialPrimitives = null,
+    string? Key = null,
+    Transform? Transform = null,
+    Paint? Paint = null
+) : Composite(Key, Transform ?? Transform.Identity, Paint ?? Defaults.Paint)
 {
-    public ImmutableList<Primitive> Primitives { get; } = primitives?.ToImmutableList() ?? [];
+    public ImmutableList<Primitive> Primitives { get; } =
+        InitialPrimitives?.ToImmutableList() ?? [];
 
     public Graphic With(Primitive primitive) => new(Primitives.Add(primitive));
 
@@ -39,5 +45,10 @@ public sealed class Graphic(IEnumerable<Primitive>? primitives = null)
         Primitive? target = Find(key);
         success = target is not null;
         return success ? Replace(key, modify(target!)) : this;
+    }
+
+    public override IEnumerable<Primitive> GetPrimitives()
+    {
+        return Primitives;
     }
 }
