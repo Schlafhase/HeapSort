@@ -74,7 +74,17 @@ public class VisualisedBHeap(
             swapToEnd = true;
         }
 
+        Colour hlColour = new((float)0x11 / 0xff, (float)0xf9 / 0xff, (float)0x11 / 0xff); // #11f911
+        Paint highlight = new(hlColour, hlColour);
+
+        // FIX: colour change breaks EVERYTHING
         _animatedChanges = _animatedChanges
+            .With(
+                new ParallelAnimation([
+                    new PaintAnimation($"bg_{a}", highlight, animationTime),
+                    new PaintAnimation($"bg_{b}", highlight, animationTime),
+                ])
+            )
             .With(
                 new ParallelAnimation([
                     new TransformAnimation(
@@ -83,7 +93,7 @@ public class VisualisedBHeap(
                         pa.Transform with
                         {
                             Translation = swapToEnd
-                                ? new(width - 20 - ((data.Length - End) * 80), -80)
+                                ? new(width - 80 - ((data.Length - End) * 80), -80)
                                 : pb.Transform.Translation,
                         },
                         Interpolation: InterpolationTypes.Cubic
@@ -100,11 +110,27 @@ public class VisualisedBHeap(
                 ])
             )
             .With(
+                new ParallelAnimation([
+                    new PaintAnimation(
+                        $"bg_{a}",
+                        new Paint(Colour.White, Colour.White),
+                        animationTime
+                    ),
+                    new PaintAnimation(
+                        $"bg_{b}",
+                        new Paint(Colour.White, Colour.White),
+                        animationTime
+                    ),
+                ])
+            )
+            .With(
                 new ChangeKeys(
                     new Dictionary<string, string>
                     {
-                        { $"bheap_{a}", $"bheap_{b}" },
-                        { $"bheap_{b}", $"bheap_{a}" },
+                        { aKey, bKey },
+                        { bKey, aKey },
+                        { $"bg_{a}", $"bg_{b}" },
+                        { $"bg_{b}", $"bg_{a}" },
                     }
                 )
             );
@@ -131,7 +157,20 @@ public class VisualisedBHeap(
     public Graphic Render()
     {
         int tHeight = Height(0);
-        return renderSubtree(0, 0, 0, 0, tHeight, height / tHeight);
+        const float bgPadding = 80;
+        float bgWidth = width + bgPadding;
+        float bgHeight = height + bgPadding;
+        return renderSubtree(0, 0, 0, 0, tHeight, height / tHeight)
+            .WithRectangle(
+                bgWidth,
+                bgHeight,
+                key: "bg",
+                transform: Transform.Identity with
+                {
+                    Translation = new(-bgPadding / 2, bgHeight / 2),
+                },
+                paint: new Paint(Colour.Transparent, Colour.Transparent)
+            );
     }
 
     private Graphic renderSubtree(
@@ -152,11 +191,11 @@ public class VisualisedBHeap(
             .With(
                 new Graphic(
                     [
-                        new Circle(50),
+                        new Circle(50, Key: $"bg_{index}"),
                         new Text(
                             data[index].ToString(),
                             FontSize: 30,
-                            Paint: new Paint(Color.Black, Color.Black)
+                            Paint: new Paint(Colour.Black, Colour.Black)
                         ),
                     ],
                     Key: $"bheap_{index}",

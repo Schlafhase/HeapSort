@@ -6,7 +6,7 @@ namespace Graphical.ImageSharpRenderer
 {
     public static class ConversionExtensions
     {
-        extension(Primitives.Color c)
+        extension(Primitives.Colour c)
         {
             public Rgba32 ToRgba32() => new(c.R, c.G, c.B, c.A);
 

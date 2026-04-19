@@ -10,7 +10,7 @@ public class VisualisedArray(
     int[] data,
     float width = 800,
     float height = 600,
-    Color? barColor = null,
+    Colour? barColor = null,
     float spacing = 2,
     double animationTime = 0.5
 ) : IEnumerable<int>
@@ -23,8 +23,8 @@ public class VisualisedArray(
 
     public int Length = data.Length;
 
-    private Color BarColor => barColor ?? Color.Blue;
-    private Paint BarPaint => new(BarColor, Color.Black);
+    private Colour BarColor => barColor ?? Colour.Blue;
+    private Paint BarPaint => new(BarColor, Colour.Black);
     private AnimatedGraphic? _animatedChanges;
 
     public void StartRecording()
@@ -109,14 +109,14 @@ public class VisualisedArray(
                 minVal = val;
         }
 
-        double range = maxVal - minVal;
+        double range = maxVal + 1 - minVal;
         if (range == 0)
             range = 1;
 
         for (int i = 0; i < data.Length; i++)
         {
             double val = data[i];
-            float normalizedHeight = (float)((val - minVal) / range) * (height * 0.8f);
+            float normalizedHeight = (float)((val + 1 - minVal) / range) * (height * 0.8f);
             float x = spacing + (i * (barWidth + spacing));
 
             Rectangle bar = new(
@@ -125,14 +125,22 @@ public class VisualisedArray(
                 $"array_{i}",
                 Transform.Identity with
                 {
-                    Translation = new(x, 0),
+                    Translation = new(x, normalizedHeight / 2), // Coordinates describe the center
                 },
                 BarPaint
             );
             g = g.With(bar);
         }
 
-        return g;
+        return g.WithRectangle(
+            width,
+            height,
+            transform: Transform.Identity with
+            {
+                Translation = new(width / 2, height / 2),
+            },
+            paint: new Paint(Colour.Transparent, Colour.Transparent)
+        );
     }
 
     public IEnumerator<int> GetEnumerator()

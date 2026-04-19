@@ -9,7 +9,7 @@ public record TransformAnimation(
     double Duration,
     Transform NewTransform,
     InterpolationType? Interpolation = null
-) : Animation(Target, Duration)
+) : Animation(Duration)
 {
     public override Graphic Apply(Graphic g, double t)
     {

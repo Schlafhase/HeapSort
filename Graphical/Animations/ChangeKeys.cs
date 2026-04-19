@@ -2,7 +2,7 @@ using Graphical.Primitives;
 
 namespace Graphical.Animations;
 
-public record ChangeKeys(Dictionary<string, string> NewMappings) : Animation("", 0)
+public record ChangeKeys(Dictionary<string, string> NewMappings) : Animation(0)
 {
     public override Graphic Apply(Graphic g, double t)
     {

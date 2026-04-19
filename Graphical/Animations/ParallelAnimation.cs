@@ -1,7 +1,7 @@
 namespace Graphical.Animations;
 
 public record ParallelAnimation(IEnumerable<Animation> Animations)
-    : Animation("", Animations.Max(a => a.Duration))
+    : Animation(Animations.Max(a => a.Duration))
 {
     public override Graphic Apply(Graphic g, double t)
     {

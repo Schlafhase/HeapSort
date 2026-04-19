@@ -28,19 +28,19 @@ namespace Graphical.Primitives
         }
     }
 
-    public record Paint(Color Fill, Color Stroke, float Width = 1f);
+    public record Paint(Colour Fill, Colour Stroke, float Width = 1f);
 
-    public record Color(float R, float G, float B, float A = 1f)
+    public record Colour(float R, float G, float B, float A = 1f)
     {
-        public static readonly Color Black = new(0, 0, 0);
-        public static readonly Color White = new(1, 1, 1);
-        public static readonly Color Transparent = new(0, 0, 0, 0);
-        public static readonly Color Red = new(1, 0, 0);
-        public static readonly Color Green = new(0, 1, 0);
-        public static readonly Color Blue = new(0, 0, 1);
+        public static readonly Colour Black = new(0, 0, 0);
+        public static readonly Colour White = new(1, 1, 1);
+        public static readonly Colour Transparent = new(0, 0, 0, 0);
+        public static readonly Colour Red = new(1, 0, 0);
+        public static readonly Colour Green = new(0, 1, 0);
+        public static readonly Colour Blue = new(0, 0, 1);
 
         /// <summary>Linearly interpolates between two colours.</summary>
-        public static Color Lerp(Color a, Color b, float t) =>
+        public static Colour Lerp(Colour a, Colour b, float t) =>
             new(
                 a.R + ((b.R - a.R) * t),
                 a.G + ((b.G - a.G) * t),

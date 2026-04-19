@@ -32,23 +32,73 @@ public record class Graphic(
         return index < 0 ? this : new(Primitives.SetItem(index, replacement));
     }
 
-    public Primitive? Find(string key) => Primitives.FirstOrDefault(p => p.Key == key);
+    public Primitive? Find(string key) =>
+        Primitives
+            .SelectMany<Primitive, Primitive>(p =>
+                p is Composite c ? [p, .. c.GetPrimitives()] : [p]
+            )
+            .FirstOrDefault(p => p.Key == key);
+
+    private (Primitive? p, Composite? c) findInsideComposites(string key)
+    {
+        foreach (Primitive item in Primitives)
+        {
+            if (item.Key == key)
+            {
+                return (item, null);
+            }
+            if (item is Composite parent)
+            {
+                foreach (Primitive child in parent.GetPrimitives())
+                {
+                    if (child.Key == key)
+                    {
+                        return (child, parent);
+                    }
+                }
+            }
+        }
+        return (null, null);
+    }
 
     public Graphic Modify(string key, Func<Primitive, Primitive> modify)
     {
-        Primitive? target = Find(key);
-        return target is not null ? Replace(key, modify(target)) : this;
+        (Primitive? p, Composite? c) = findInsideComposites(key);
+        if (p is null)
+        {
+            return this;
+        }
+        if (c is null)
+        {
+            return Replace(key, modify(p));
+        }
+        // FIX: fix possible null reference
+        return Replace(c.Key, c.ModifyChild(p.Key, modify));
     }
 
     public Graphic Modify(string key, Func<Primitive, Primitive> modify, out bool success)
     {
-        Primitive? target = Find(key);
-        success = target is not null;
-        return success ? Replace(key, modify(target!)) : this;
+        (Primitive? p, Composite? c) = findInsideComposites(key);
+        success = p is not null;
+        if (p is null)
+        {
+            return this;
+        }
+        if (c is null)
+        {
+            return Replace(key, modify(p));
+        }
+        // FIX: fix possible null reference
+        return Replace(c.Key, c.ModifyChild(p.Key, modify));
     }
 
     public override IEnumerable<Primitive> GetPrimitives()
     {
         return Primitives;
+    }
+
+    public override Composite ModifyChild(string target, Func<Primitive, Primitive> modify)
+    {
+        return Modify(target, modify);
     }
 }

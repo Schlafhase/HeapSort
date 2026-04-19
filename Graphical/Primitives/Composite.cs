@@ -7,5 +7,7 @@ namespace Graphical.Primitives
     ) : Primitive(Key, Transform ?? Transform.Identity, Paint ?? Defaults.Paint)
     {
         public abstract IEnumerable<Primitive> GetPrimitives();
+
+        public abstract Composite ModifyChild(string target, Func<Primitive, Primitive> modify);
     }
 }
