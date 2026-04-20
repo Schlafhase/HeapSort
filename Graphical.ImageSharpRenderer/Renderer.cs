@@ -116,7 +116,7 @@ public static class Renderer
         Vector2 scale = p.Transform.Scale;
         switch (p)
         {
-            case Composite c:
+            case Graphic c:
                 List<(Primitive child, Image<Rgba32> img)> children =
                 [
                     .. c.GetPrimitives()

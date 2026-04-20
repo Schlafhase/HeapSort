@@ -7,7 +7,7 @@ namespace Graphical.Primitives
         string? Key = null,
         Transform? Transform = null,
         Paint? Paint = null
-    ) : Primitive(Key, Transform ?? Transform.Identity, Paint ?? Defaults.Paint);
+    ) : Primitive(Key, Transform, Paint);
 
     public static partial class GraphicExtensions
     {

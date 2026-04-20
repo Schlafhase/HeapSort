@@ -6,11 +6,15 @@ public record ChangeKeys(Dictionary<string, string> NewMappings) : Animation(0)
 {
     public override Graphic Apply(Graphic g, double t)
     {
+        // TODO: add '.' path supports (will be painful)
         Dictionary<int, string> idxToId = [];
         foreach (string key in NewMappings.Keys)
         {
             int idx = g.Primitives.FindIndex(p => p.Key == key);
-            idxToId[idx] = NewMappings[key];
+            if (idx >= 0)
+            {
+                idxToId[idx] = NewMappings[key];
+            }
         }
 
         List<Primitive> newPrimitives = [];

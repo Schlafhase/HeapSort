@@ -2,7 +2,26 @@ using System.Numerics;
 
 namespace Graphical.Primitives
 {
-    public abstract record Primitive(string? Key, Transform Transform, Paint Paint);
+    public abstract record Primitive
+    {
+        public string? Key;
+        public Transform Transform;
+        public Paint Paint;
+
+        public Primitive(string? key = null, Transform? transform = null, Paint? paint = null)
+        {
+            if (key?.Contains('.') is true)
+            {
+                throw new ArgumentException(
+                    "Key cannot contain a '.' because they are used to address nested primitives inside composites",
+                    nameof(key)
+                );
+            }
+            Key = key;
+            Transform = transform ?? Transform.Identity;
+            Paint = paint ?? Defaults.Paint;
+        }
+    }
 
     public record Transform(Vector2 Translation, float Rotation, Vector2 Scale)
     {
