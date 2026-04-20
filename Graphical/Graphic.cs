@@ -44,7 +44,7 @@ public record Graphic(
                 {
                     Primitives = Primitives.SetItem(
                         parent.Index,
-                        p.Replace(string.Join(',', path[1..]), replacement)
+                        p.Replace(string.Join('.', path[1..]), replacement)
                     ),
                 }
                 : this;
@@ -58,7 +58,6 @@ public record Graphic(
 
     public FindResult FindRecursive(string key, FindResult? parent = null)
     {
-        // TODO: introduce syntax like: "composite.primitive" for better performance and readability
         string[] path = key.Split('.');
 
         if (path.Length > 1)
@@ -66,7 +65,7 @@ public record Graphic(
             Primitive? first = Find(path[0]);
             if (first is Graphic p)
             {
-                return FindRecursive(
+                return p.FindRecursive(
                     string.Join('.', path[1..]),
                     new()
                     {

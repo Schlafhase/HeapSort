@@ -20,7 +20,8 @@ namespace Graphical.Animations
             {
                 return g;
             }
-            _startPaint ??= g.Find(Target)?.Paint;
+            var tsdf = g.FindRecursive(Target);
+            _startPaint ??= g.FindRecursive(Target).Value?.Paint;
             if (_startPaint is null)
             {
                 _notFound = true;

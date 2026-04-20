@@ -77,12 +77,11 @@ public class VisualisedBHeap(
         Colour hlColour = new((float)0x11 / 0xff, (float)0xf9 / 0xff, (float)0x11 / 0xff); // #11f911
         Paint highlight = new(hlColour, hlColour);
 
-        // FIX: colour change breaks EVERYTHING
         _animatedChanges = _animatedChanges
             .With(
                 new ParallelAnimation([
-                    new PaintAnimation($"bg_{a}", highlight, animationTime),
-                    new PaintAnimation($"bg_{b}", highlight, animationTime),
+                    new PaintAnimation($"{aKey}.bg", highlight, animationTime),
+                    new PaintAnimation($"{bKey}.bg", highlight, animationTime),
                 ])
             )
             .With(
@@ -112,27 +111,19 @@ public class VisualisedBHeap(
             .With(
                 new ParallelAnimation([
                     new PaintAnimation(
-                        $"bg_{a}",
+                        $"{aKey}.bg",
                         new Paint(Colour.White, Colour.White),
                         animationTime
                     ),
                     new PaintAnimation(
-                        $"bg_{b}",
+                        $"{bKey}.bg",
                         new Paint(Colour.White, Colour.White),
                         animationTime
                     ),
                 ])
             )
             .With(
-                new ChangeKeys(
-                    new Dictionary<string, string>
-                    {
-                        { aKey, bKey },
-                        { bKey, aKey },
-                        { $"bg_{a}", $"bg_{b}" },
-                        { $"bg_{b}", $"bg_{a}" },
-                    }
-                )
+                new ChangeKeys(new Dictionary<string, string> { { aKey, bKey }, { bKey, aKey } })
             );
     }
 
@@ -191,7 +182,7 @@ public class VisualisedBHeap(
             .With(
                 new Graphic(
                     [
-                        new Circle(50, Key: $"bg_{index}"),
+                        new Circle(50, Key: "bg"),
                         new Text(
                             data[index].ToString(),
                             FontSize: 30,
