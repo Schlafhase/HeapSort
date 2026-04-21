@@ -6,7 +6,7 @@ public static class HeapSort
 {
     public static (List<int>, BHeapAnimationData) Sort(List<int> values, double animationTime = 0.5)
     {
-        VisualisedBHeap heap = new([.. values], animationTime: animationTime);
+        VisualisedBHeap heap = new([.. values], 1920, 1080, animationTime);
         heap.StartRecording();
         heapify(heap);
         for (int end = heap.Length - 1; end > 0; end--)

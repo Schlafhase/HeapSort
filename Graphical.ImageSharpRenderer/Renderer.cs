@@ -3,6 +3,7 @@ using System.Numerics;
 using Graphical.Primitives;
 using SixLabors.Fonts;
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Drawing;
 using SixLabors.ImageSharp.Drawing.Processing;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
@@ -12,6 +13,11 @@ namespace Graphical.ImageSharpRenderer;
 
 public static class Renderer
 {
+    /// <summary>
+    /// Helper function for AnimationRenderer
+    /// </summary>
+    public static void RenderAndSave(Graphic g, string path) => Render(g).Save(path);
+
     public static Image<Rgba32> Render(Graphic g, float scale = 1)
     {
         List<(Primitive primitive, Image<Rgba32> img)> rendered =
@@ -111,6 +117,10 @@ public static class Renderer
     /// need to be. It also applies the scale of the primitives
     /// to avoid a loss of quality.
     /// </summary>
+    /// WARN:
+    /// PERF: BIG performance increase could be achieved by taking an ImageSharp ctx as parameter
+    /// and modifying it instead of rendering each primitive individually.
+    /// This would be quite a big rewrite and might also bring some limitiations.
     private static Image<Rgba32>? renderLocal(Primitive p)
     {
         Vector2 scale = p.Transform.Scale;
@@ -206,7 +216,15 @@ public static class Renderer
                 if (w == 0 || h == 0)
                     return null;
 
-                return new Image<Rgba32>(w, h, c.Paint.Fill.ToRgba32());
+                Image<Rgba32> canvas = new(w, h);
+                canvas.Mutate(ctx =>
+                    ctx.Fill(
+                        new SolidBrush(p.Paint.Fill.ToColor()),
+                        new EllipsePolygon(new PointF(w / 2, h / 2), new SizeF(w, h))
+                    )
+                );
+
+                return canvas;
 
             default:
                 return new Image<Rgba32>(1, 1);
