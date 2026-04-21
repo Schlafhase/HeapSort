@@ -8,7 +8,7 @@ using Graphical.ImageSharpRenderer;
 heapsorted.animation.Heap.RenderToFile(
     "heapsortHeap.mp4",
     Renderer.RenderAndSave,
-    fps: 144,
+    fps: 14,
     width: 1920,
     height: 1080
 );

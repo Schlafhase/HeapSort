@@ -7,7 +7,8 @@ public record ChangeKeys(Dictionary<string, string> NewMappings) : Animation(0)
 {
     public override Graphic Apply(Graphic g, double t)
     {
-        // WARN: this is incredibly weird and will lead to a number of bugs
+        // WARN: this whole animation is incredibly weird and will lead to a number of bugs
+        // Should be rewritten some time
         Dictionary<int, string> topLevel = [];
         // parent path -> list of (child key, new key)
         Dictionary<string, List<(string oldKey, string newKey)>> nested = [];

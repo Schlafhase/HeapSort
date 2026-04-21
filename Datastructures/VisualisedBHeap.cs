@@ -178,7 +178,36 @@ public class VisualisedBHeap(
             return new Graphic();
         }
 
+        // TODO: fix lines
+        // 1. z-index
+        // 2. don't render when no child
+        // 3. remove when child gets moved to end
+        // 4. change keys after swap (maybe also animate something during swap like scale to 0 and then 1 again)
         return new Graphic()
+            .With(
+                new Line(
+                    new(0, 0),
+                    new(-(width / 4 / (depth + 1)), yOffset),
+                    Key: $"line_{lChild(index)}",
+                    Transform: Transform.Identity with
+                    {
+                        Translation = new(x - (width / 8 / (depth + 1)), y + (yOffset / 2)),
+                    },
+                    Paint: new Paint(Colour.White, Colour.White, 10)
+                )
+            )
+            .With(
+                new Line(
+                    new(0, 0),
+                    new(width / 4 / (depth + 1), yOffset),
+                    Key: $"line_{rChild(index)}",
+                    Transform: Transform.Identity with
+                    {
+                        Translation = new(x + (width / 8 / (depth + 1)), y + (yOffset / 2)),
+                    },
+                    Paint: new Paint(Colour.White, Colour.White, 10)
+                )
+            )
             .With(
                 new Graphic(
                     [

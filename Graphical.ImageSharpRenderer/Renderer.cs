@@ -18,6 +18,12 @@ public static class Renderer
     /// </summary>
     public static void RenderAndSave(Graphic g, string path) => Render(g).Save(path);
 
+    /// <summary>
+    /// Allows a quick extension of the built-in implementations for rendering primitives
+    /// </summary>
+    public static Func<Primitive, Image<Rgba32>> FallbackRenderLocal { get; set; } =
+        _ => new Image<Rgba32>(1, 1);
+
     public static Image<Rgba32> Render(Graphic g, float scale = 1)
     {
         List<(Primitive primitive, Image<Rgba32> img)> rendered =
@@ -124,13 +130,13 @@ public static class Renderer
     private static Image<Rgba32>? renderLocal(Primitive p)
     {
         Vector2 scale = p.Transform.Scale;
+        Image<Rgba32> canvas;
         switch (p)
         {
             case Graphic c:
                 List<(Primitive child, Image<Rgba32> img)> children =
                 [
                     .. c.GetPrimitives()
-                        // PERF: could probably be optimised by merging both select calls but this is more readable
                         .Select(child =>
                             child with
                             {
@@ -214,9 +220,10 @@ public static class Renderer
                 w = Math.Max(1, (int)(c.Radius * scale.X));
                 h = Math.Max(1, (int)(c.Radius * scale.Y));
                 if (w == 0 || h == 0)
+                {
                     return null;
-
-                Image<Rgba32> canvas = new(w, h);
+                }
+                canvas = new(w, h);
                 canvas.Mutate(ctx =>
                     ctx.Fill(
                         new SolidBrush(p.Paint.Fill.ToColor()),
@@ -226,8 +233,32 @@ public static class Renderer
 
                 return canvas;
 
+            case Line l:
+                Vector2 line = (l.A * scale) - (l.B * scale);
+                Vector2 a;
+                Vector2 b;
+                if (Math.Sign(line.X) == Math.Sign(line.Y))
+                {
+                    a = new(0, 0);
+                    b = new(Math.Abs(line.X), Math.Abs(line.Y));
+                }
+                else
+                {
+                    a = new(0, Math.Abs(line.Y));
+                    b = new(Math.Abs(line.X), 0);
+                }
+                w = ((Vector2[])[a, b]).Max(v => (int)v.X);
+                h = ((Vector2[])[a, b]).Max(v => (int)v.Y);
+                if (w == 0 || h == 0)
+                {
+                    return null;
+                }
+                canvas = new(w, h);
+                canvas.Mutate(ctx => ctx.DrawLine(p.Paint.Stroke.ToColor(), p.Paint.Width, a, b));
+                return canvas;
+
             default:
-                return new Image<Rgba32>(1, 1);
+                return FallbackRenderLocal(p);
         }
     }
 
