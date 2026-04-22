@@ -31,13 +31,15 @@ public class VisualisedBHeap(
     public int End { get; set; } = data.Length;
 
     private AnimatedGraphic? _animatedChanges;
+    private Graphic? _initialRender;
     private VisualisedArray? _fullArray;
 
     public void StartRecording()
     {
         _fullArray = new([.. data]); // Don't want to copy by reference to avoid side effects
         _fullArray.StartRecording();
-        _animatedChanges = Render().Animate();
+        _initialRender = Render();
+        _animatedChanges = _initialRender.Animate();
     }
 
     public void Swap(int a, int b)
@@ -84,6 +86,14 @@ public class VisualisedBHeap(
                     new PaintAnimation($"{bKey}.bg", highlight, animationTime),
                 ])
             )
+            .ConditionalWith(
+                swapToEnd,
+                new PaintAnimation(
+                    $"line_{b}",
+                    new Paint(Colour.Transparent, Colour.Transparent),
+                    animationTime
+                )
+            )
             .With(
                 new ParallelAnimation([
                     new TransformAnimation(
@@ -123,7 +133,15 @@ public class VisualisedBHeap(
                 ])
             )
             .With(
-                new ChangeKeys(new Dictionary<string, string> { { aKey, bKey }, { bKey, aKey } })
+                new ChangeKeys(
+                    new Dictionary<string, string>
+                    {
+                        { $"line_{a}", $"line_{b}" },
+                        { $"line_{b}", $"line_{a}" },
+                        { aKey, bKey },
+                        { bKey, aKey },
+                    }
+                )
             );
     }
 
@@ -179,12 +197,11 @@ public class VisualisedBHeap(
         }
 
         // TODO: fix lines
-        // 1. z-index
-        // 2. don't render when no child
         // 3. remove when child gets moved to end
         // 4. change keys after swap (maybe also animate something during swap like scale to 0 and then 1 again)
         return new Graphic()
-            .With(
+            .ConditionalWith(
+                lChild(index) < End,
                 new Line(
                     new(0, 0),
                     new(-(width / 4 / (depth + 1)), yOffset),
@@ -193,10 +210,12 @@ public class VisualisedBHeap(
                     {
                         Translation = new(x - (width / 8 / (depth + 1)), y + (yOffset / 2)),
                     },
-                    Paint: new Paint(Colour.White, Colour.White, 10)
+                    Paint: new Paint(Colour.White, Colour.White, 10),
+                    Z: -1
                 )
             )
-            .With(
+            .ConditionalWith(
+                rChild(index) < End,
                 new Line(
                     new(0, 0),
                     new(width / 4 / (depth + 1), yOffset),
@@ -205,7 +224,8 @@ public class VisualisedBHeap(
                     {
                         Translation = new(x + (width / 8 / (depth + 1)), y + (yOffset / 2)),
                     },
-                    Paint: new Paint(Colour.White, Colour.White, 10)
+                    Paint: new Paint(Colour.White, Colour.White, 10),
+                    Z: -1
                 )
             )
             .With(

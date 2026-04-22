@@ -11,19 +11,62 @@ public record Graphic(
 ) : Primitive(Key, Transform, Paint)
 {
     public ImmutableList<Primitive> Primitives { get; init; } =
-        InitialPrimitives?.ToImmutableList() ?? [];
+        InitialPrimitives?.OrderBy(p => p.Z).ToImmutableList() ?? [];
 
     public Graphic With(Primitive primitive) =>
         this with
         {
-            Primitives = Primitives.Add(primitive),
+            Primitives = Primitives.Insert(
+                Primitives.FindLastIndex(p => p.Z >= primitive.Z) is int i && i >= 0
+                    ? i
+                    : Primitives.Count,
+                primitive
+            ),
         };
 
-    public Graphic WithRange(IEnumerable<Primitive> primitives) =>
+    public Graphic ConditionalWith(bool predicate, Primitive primitive) =>
+        predicate ? With(primitive) : this;
+
+    public Graphic WithRange(IEnumerable<Primitive> primitives, bool sorted = false) =>
         this with
         {
-            Primitives = Primitives.AddRange(primitives),
+            Primitives = mergeSortedLists(
+                Primitives,
+                sorted ? [.. primitives] : [.. primitives.OrderBy(p => p.Z)]
+            ),
         };
+
+    private static ImmutableList<Primitive> mergeSortedLists(
+        ImmutableList<Primitive> a,
+        ImmutableList<Primitive> b
+    )
+    {
+        var result = ImmutableList.CreateBuilder<Primitive>();
+        int i = 0,
+            j = 0;
+        while (i < a.Count && j < b.Count)
+        {
+            if (a[i].Z <= b[j].Z)
+            {
+                result.Add(a[i++]);
+            }
+            else
+            {
+                result.Add(b[j++]);
+            }
+        }
+        while (i < a.Count)
+        {
+            result.Add(a[i++]);
+        }
+
+        while (j < b.Count)
+        {
+            result.Add(b[j++]);
+        }
+
+        return result.ToImmutable();
+    }
 
     public AnimatedGraphic Animate() => new(this);
 

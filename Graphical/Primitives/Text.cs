@@ -6,8 +6,9 @@ namespace Graphical.Primitives
         string FontFamily = "JetBrainsMono Nerd Font",
         string? Key = null,
         Transform? Transform = null,
-        Paint? Paint = null
-    ) : Primitive(Key, Transform, Paint);
+        Paint? Paint = null,
+        int Z = 0
+    ) : Primitive(Key, Transform, Paint, Z);
 
     public static partial class GraphicExtensions
     {

@@ -5,8 +5,9 @@ namespace Graphical.Primitives
         float Height,
         string? Key = null,
         Transform? Transform = null,
-        Paint? Paint = null
-    ) : Primitive(Key, Transform, Paint);
+        Paint? Paint = null,
+        int Z = 0
+    ) : Primitive(Key, Transform, Paint, Z);
 
     public static partial class GraphicExtensions
     {

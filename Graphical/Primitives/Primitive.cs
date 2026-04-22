@@ -7,8 +7,14 @@ namespace Graphical.Primitives
         public string? Key;
         public Transform Transform;
         public Paint Paint;
+        public int Z;
 
-        public Primitive(string? key = null, Transform? transform = null, Paint? paint = null)
+        public Primitive(
+            string? key = null,
+            Transform? transform = null,
+            Paint? paint = null,
+            int z = 0
+        )
         {
             if (key?.Contains('.') is true)
             {
@@ -20,6 +26,7 @@ namespace Graphical.Primitives
             Key = key;
             Transform = transform ?? Transform.Identity;
             Paint = paint ?? Defaults.Paint;
+            Z = z;
         }
     }
 

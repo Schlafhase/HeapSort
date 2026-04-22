@@ -16,8 +16,8 @@ public sealed class AnimatedGraphic(Graphic baseGraphic, IEnumerable<Animation>?
     public AnimatedGraphic With(Animation animation) =>
         new(_baseGraphic, Animations.Add(animation));
 
-    public AnimatedGraphic ConditionalWith(Func<bool> predicate, Animation animation) =>
-        predicate() ? With(animation) : this;
+    public AnimatedGraphic ConditionalWith(bool predicate, Animation animation) =>
+        predicate ? With(animation) : this;
 
     public AnimatedGraphic WithRange(IEnumerable<Animation> animations) =>
         new(_baseGraphic, Animations.AddRange(animations));
